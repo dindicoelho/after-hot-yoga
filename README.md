@@ -4,7 +4,7 @@
 
 Escolha seu lutador, equipe um **copo Stanley como arma** e encare a chefe definitiva: **a carioca**.
 
-🎮 **Jogue agora:** _(link da Vercel após o deploy)_
+🎮 **Jogue agora:** **[after-hot-yoga.vercel.app](https://after-hot-yoga.vercel.app)**
 
 ---
 
