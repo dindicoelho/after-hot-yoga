@@ -492,7 +492,7 @@ function mkFighter(cfg, weapon, x, facing, hp, isPlayer){
     cfg, weapon, x, y:GROUND, vx:0, vy:0, facing, hp, maxhp:hp, isPlayer,
     state:'idle', t:0, atkT:0, cd:0, onGround:true, invuln:0, blocking:false,
     legPhase:0, blink:0, flash:0, aiT:0, aiMode:'approach',
-    meter:0, special:SPECIALS[cfg.id]||null, specialT:0, atkMulti:false
+    meter:30, special:SPECIALS[cfg.id]||null, specialT:0, atkMulti:false
   };
 }
 
@@ -518,6 +518,7 @@ function pressing(...k){ return k.some(x=>keys[x]); }
 function updateFighter(f, foe){
   f.t++; f.blink=(f.blink+1)%180;
   if(f.invuln>0)f.invuln--; if(f.cd>0)f.cd--; if(f.flash>0)f.flash--; if(f.specialT>0)f.specialT--;
+  if(f.state!=='ko') f.meter=Math.min(100, f.meter+0.42);   // enchimento passivo da barra de especial
 
   // sempre vira pro oponente quando parado
   if(f.state==='idle'||f.state==='walk') f.facing = foe.x>f.x?1:-1;
@@ -742,8 +743,8 @@ function hit(target, dmg, dir, knock, eff={}, attacker=null){
   target.vx+=dir*knock; target.vy-=knock*0.4;
   target.invuln=eff.lowInvuln?3:12; target.flash=8;
   // enche a barra de especial (quem apanha enche mais)
-  target.meter=Math.min(100, target.meter + dmg*0.85);
-  if(attacker) attacker.meter=Math.min(100, attacker.meter + dmg*0.55);
+  target.meter=Math.min(100, target.meter + dmg*1.6);
+  if(attacker) attacker.meter=Math.min(100, attacker.meter + dmg*1.1);
   if(!target.blocking){
     if(eff.freeze){ target.state='frozen'; target.atkT=eff.freeze; }
     else { target.state='hit'; target.atkT=eff.stun||14; }
