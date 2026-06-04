@@ -11,6 +11,35 @@ function unlockAudio(){
   }catch(e){}
 }
 
+/* ---------- Música de fundo (loop sintetizado, opcional) ---------- */
+const music = {on:false, timer:null, i:0};
+// progressão simples em pentatônica (Hz; 0 = silêncio) — baixo + melodia alternados
+const MUSIC_SEQ = [
+  131, 0, 196, 262,  0, 196, 247, 196,
+  147, 0, 220, 294,  0, 220, 262, 220,
+  165, 0, 247, 330,  0, 247, 294, 247,
+  147, 0, 220, 294,  0, 175, 220, 175,
+];
+function playMusicNote(freq){
+  if(!freq) return;
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(), gn=actx.createGain();
+    o.type = freq<180 ? 'triangle' : 'square';      // graves arredondados, agudos chiptune
+    o.frequency.value=freq; o.connect(gn); gn.connect(actx.destination);
+    const t=actx.currentTime, vol = freq<180?0.06:0.035;
+    gn.gain.setValueAtTime(0.0001,t);
+    gn.gain.exponentialRampToValueAtTime(vol,t+0.02);
+    gn.gain.exponentialRampToValueAtTime(0.0001,t+0.26);
+    o.start(t); o.stop(t+0.28);
+  }catch(e){}
+}
+function startMusic(){
+  if(music.on) return; music.on=true; music.i=0;
+  music.timer=setInterval(()=>{ playMusicNote(MUSIC_SEQ[music.i % MUSIC_SEQ.length]); music.i++; }, 210);
+}
+function stopMusic(){ music.on=false; if(music.timer){ clearInterval(music.timer); music.timer=null; } }
+
 function sfx(type){
   try{
     actx=actx||new (window.AudioContext||window.webkitAudioContext)();

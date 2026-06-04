@@ -54,9 +54,40 @@ function go(screen){
 
 function setAiLevel(lvl){
   if(!AI_LEVELS[lvl]) return;
-  aiLevel = lvl;
+  aiLevel = lvl; setSetting('difficulty', lvl);
   document.querySelectorAll('#diff .dbtn').forEach(b=> b.classList.toggle('sel', b.getAttribute('data-lvl')===lvl));
   sfx('select');
+}
+
+// inicia o jogo a partir do título (gesto do usuário → libera/inicia áudio)
+function beginGame(){
+  unlockAudio();
+  if(getSetting('music', false)) startMusic();
+  go('select');
+}
+
+function toggleMusicSetting(){
+  const on = !getSetting('music', false);
+  setSetting('music', on);
+  if(on) startMusic(); else stopMusic();
+  updateMusicBtn();
+}
+function updateMusicBtn(){
+  const b=document.getElementById('musicBtn'); if(!b) return;
+  const on=getSetting('music', false);
+  b.textContent = on ? '♪ Música: ON' : '♪ Música: OFF';
+  b.classList.toggle('on', on);
+}
+
+// aplica preferências salvas e mostra o placar de carreira no título
+function initMeta(){
+  aiLevel = getSetting('difficulty', 'normal');
+  document.querySelectorAll('#diff .dbtn').forEach(b=> b.classList.toggle('sel', b.getAttribute('data-lvl')===aiLevel));
+  updateMusicBtn();
+  const s=getSave(), el=document.getElementById('careerStats');
+  if(el) el.textContent = ((s.wins||0)+(s.losses||0)>0)
+    ? 'Carreira — Vitórias '+(s.wins||0)+' · Derrotas '+(s.losses||0)+' · Recorde de sequência '+(s.best||0)
+    : '';
 }
 
 function startFight(){
@@ -109,10 +140,29 @@ function bar(x,y,w,pct,color,label,right){
 function drawMsg(){
   if(msgT<=0) return; msgT--;
   g.save(); g.textAlign='center';
-  g.font='bold 40px Trebuchet MS';
-  g.fillStyle='#000'; g.fillText(msg,242,140);
-  g.fillStyle=gameState==='over'?'#ffcf6b':'#ff5a3c'; g.fillText(msg,240,138);
-  if(gameState==='over'){ g.fillStyle='#f6e9df'; g.font='14px Trebuchet MS'; g.fillText('aperte R para revanche',240,168); }
+
+  if(gameState==='over'){
+    // painel de fim de luta
+    const accent = lastWin ? '#ffcf6b' : '#ff5a3c';
+    g.fillStyle='rgba(18,9,11,.78)'; g.fillRect(90,56,GW-180,154);
+    g.strokeStyle=accent; g.lineWidth=2; g.strokeRect(90,56,GW-180,154);
+    g.font='bold 32px Trebuchet MS';
+    g.fillStyle='#000'; g.fillText(msg,242,104);
+    g.fillStyle=accent; g.fillText(msg,240,102);
+    // placar
+    const s=scoreboard||{wins:0,losses:0,streak:0,best:0};
+    g.fillStyle='#f6e9df'; g.font='13px Trebuchet MS';
+    g.fillText('Vitórias '+s.wins+'    ·    Derrotas '+s.losses, 240, 132);
+    g.fillText('Sequência atual: '+s.streak+'   (recorde: '+s.best+')', 240, 152);
+    g.fillStyle='#a78d82'; g.font='11px Trebuchet MS';
+    g.fillText('Dificuldade: '+(AI_LEVELS[aiLevel]||AI_LEVELS.normal).name, 240, 172);
+    g.fillStyle=accent; g.font='bold 13px Trebuchet MS';
+    g.fillText(IS_TOUCH ? 'toque em ↺ para revanche' : 'aperte R para revanche', 240, 196);
+  } else {
+    g.font='bold 40px Trebuchet MS';
+    g.fillStyle='#000'; g.fillText(msg,242,140);
+    g.fillStyle='#ff5a3c'; g.fillText(msg,240,138);
+  }
   g.restore();
 }
 
@@ -208,3 +258,4 @@ function setupTouchControls(){
 buildCharGrid();
 buildWeaponGrid();
 setupTouchControls();
+initMeta();

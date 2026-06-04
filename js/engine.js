@@ -6,6 +6,7 @@ g.imageSmoothingEnabled=false;
 
 let player, enemy, projectiles, fx, waves, floaters, shake, flashScreen, hitstop, gameState, msg, msgT, keys={}, raf;
 let aiLevel='normal';                                  // dificuldade da IA (ver AI_LEVELS)
+let lastWin=false, scoreboard=null;                    // resultado/placar pra tela de fim
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const rint=(a,b)=>a+Math.floor(Math.random()*(b-a+1));   // inteiro aleatório em [a,b]
 
@@ -348,6 +349,8 @@ function updateFloaters(){
 function endFight(loser){
   if(gameState==='over') return;
   gameState='over';
-  if(loser===enemy){ msg='VOCÊ VENCEU! 🧘'; } else { msg='A CARIOCA VENCEU...'; }
+  lastWin = (loser===enemy);
+  scoreboard = recordResult(lastWin);     // atualiza e persiste o placar
+  msg = lastWin ? 'VOCÊ VENCEU! 🧘' : 'A CARIOCA VENCEU...';
   msgT=99999;
 }
