@@ -69,6 +69,15 @@
   .weapons .ds{font-size:12px; min-height:44px;}
   .footbar{display:flex; gap:12px; justify-content:center; margin-top:16px;}
 
+  /* Telas de seleção sempre cabem na viewport: cabeçalho no topo, grade
+     rolável no meio e o botão de avançar SEMPRE visível embaixo. */
+  #select.active, #weapon.active{
+    display:flex; flex-direction:column;
+    max-height:94vh; max-height:94dvh;
+  }
+  #select .head, #weapon .head, #select .footbar, #weapon .footbar{ flex:0 0 auto; }
+  #select .grid, #weapon .grid{ flex:1 1 auto; min-height:0; max-height:none; }
+
   /* ---------- Fight ---------- */
   #fight{position:relative;}
   #game{width:100%; display:block; background:#000; border-radius:8px; box-shadow:0 10px 40px rgba(0,0,0,.6);}
