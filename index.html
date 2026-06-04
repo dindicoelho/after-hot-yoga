@@ -41,6 +41,18 @@
   .btn:active{transform:translateY(6px); box-shadow:0 0 0 #8f2415;}
   .btn.gold{background:var(--gold); box-shadow:0 6px 0 #9c7415; color:#241300;}
 
+  /* Seletor de dificuldade */
+  #diff{margin-top:26px;}
+  #diff .dlabel{display:block; color:var(--dim); font-size:12px; text-transform:uppercase; letter-spacing:2px; margin-bottom:8px;}
+  #diff .dbtns{display:inline-flex; gap:8px; background:var(--panel); padding:5px; border-radius:8px; border:1px solid #3a2730;}
+  #diff .dbtn{
+    cursor:pointer; border:none; background:transparent; color:var(--dim);
+    font-family:inherit; font-weight:800; font-size:14px; padding:8px 16px; border-radius:6px;
+    text-transform:uppercase; letter-spacing:.5px; transition:.12s;
+  }
+  #diff .dbtn:hover{color:var(--ink);}
+  #diff .dbtn.sel{background:var(--hot); color:#1a0c08;}
+
   /* ---------- Select screens ---------- */
   .screen{display:none;}
   .screen.active{display:block; animation:fade .25s ease;}
@@ -139,6 +151,14 @@
   <div id="title" class="screen active">
     <h1>After<span>Hot Yoga</span></h1>
     <p>Sala de espera. Calor. Tensão. Só um sai vivo (ou pelo menos hidratado).</p>
+    <div id="diff">
+      <span class="dlabel">Dificuldade</span>
+      <div class="dbtns">
+        <button class="dbtn" data-lvl="facil" onclick="setAiLevel('facil')">Fácil</button>
+        <button class="dbtn sel" data-lvl="normal" onclick="setAiLevel('normal')">Normal</button>
+        <button class="dbtn" data-lvl="dificil" onclick="setAiLevel('dificil')">Difícil</button>
+      </div>
+    </div>
     <button class="btn" onclick="go('select')">▶ Começar</button>
   </div>
 

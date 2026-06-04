@@ -52,6 +52,13 @@ function go(screen){
   document.getElementById(screen).classList.add('active');
 }
 
+function setAiLevel(lvl){
+  if(!AI_LEVELS[lvl]) return;
+  aiLevel = lvl;
+  document.querySelectorAll('#diff .dbtn').forEach(b=> b.classList.toggle('sel', b.getAttribute('data-lvl')===lvl));
+  sfx('select');
+}
+
 function startFight(){
   go('fight');
   player = mkFighter(chosenChar, chosenWeapon, 130, 1, 100, true);
@@ -68,9 +75,12 @@ function drawHUD(){
   // barras de especial
   meterBar(20, 34, 150, player.meter/100, false, player);
   meterBar(GW-20-150, 34, 150, enemy.meter/100, true, enemy);
-  // arma
-  g.fillStyle='#ffcf6b'; g.font='10px Trebuchet MS'; g.textAlign='left';
+  // arma + dificuldade
+  g.textAlign='left';
+  g.fillStyle='#ffcf6b'; g.font='10px Trebuchet MS';
   g.fillText('🥤 '+chosenWeapon.name, 22, 62);
+  g.fillStyle='#a78d82'; g.font='9px Trebuchet MS';
+  g.fillText('Dificuldade: '+(AI_LEVELS[aiLevel]||AI_LEVELS.normal).name, 22, 74);
 }
 function meterBar(x,y,w,pct,right,f){
   g.fillStyle='#0008'; g.fillRect(x-1,y-1,w+2,8);
