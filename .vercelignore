@@ -1,0 +1,8 @@
+node_modules
+test
+tools
+eslint.config.js
+package.json
+package-lock.json
+.git
+.gitignore
