@@ -186,7 +186,7 @@ function loop(){
     updateProjectiles();
   } else {
     // ainda atualiza física residual (knockback/ko)
-    [player,enemy].forEach(f=>{ f.x+=f.vx; f.y+=f.vy; if(f.y<GROUND){f.vy+=GRAV;}else{f.y=GROUND;f.vy=0;} f.vx*=0.85; });
+    [player,enemy].forEach(f=>{ f.x+=f.vx; f.y+=f.vy; if(f.y<GROUND){f.vy+=GRAV;}else{f.y=GROUND;f.vy=0;} f.vx*=CONFIG.physics.koFriction; });
     updateProjectiles();
   }
   updateFx(); updateWaves(); updateFloaters();
@@ -208,10 +208,28 @@ function render(){
   drawWaves();
   fx.forEach(p=>{ g.globalAlpha=Math.max(0,p.life/18); g.fillStyle=p.color; g.fillRect(p.x-2,p.y-2,4,4); g.globalAlpha=1; });
   drawFloaters();
+  if(debugHit) drawDebug();
   g.restore();
   if(flashScreen>0){ g.fillStyle='rgba(255,255,255,'+(flashScreen/14)+')'; g.fillRect(0,0,GW,GH); }
   drawHUD();
   drawMsg();
+}
+
+// visualizador de hitbox (dev, tecla H): mostra eixo central, ponto de mira
+// (torso) e a linha de alcance do golpe — exatamente o que doMeleeHit checa
+function drawDebug(){
+  g.save(); g.lineWidth=1;
+  [player,enemy].forEach(f=>{
+    g.strokeStyle='rgba(120,210,255,.85)';
+    g.beginPath(); g.moveTo(f.x, f.y-90); g.lineTo(f.x, f.y); g.stroke();   // eixo central
+    g.fillStyle='rgba(120,210,255,.85)'; g.fillRect(f.x-2, f.y-44, 4,4);    // ponto de mira (torso)
+    if(f.state==='attack' && f.atkReach){
+      g.strokeStyle='rgba(255,90,90,.95)';
+      g.beginPath(); g.moveTo(f.x, f.y-44); g.lineTo(f.x+f.facing*f.atkReach, f.y-44); g.stroke();
+      g.fillStyle='rgba(255,90,90,.95)'; g.fillRect(f.x+f.facing*f.atkReach-2, f.y-46, 4,5);
+    }
+  });
+  g.restore();
 }
 
 function drawFloaters(){

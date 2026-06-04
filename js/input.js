@@ -5,6 +5,7 @@ addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
   keys[e.key.toLowerCase()]=true;
   if(e.key.toLowerCase()==='r' && document.getElementById('fight').classList.contains('active')) startFight();
+  if(e.key.toLowerCase()==='h') debugHit=!debugHit;   // dev: mostra/esconde hitboxes
 });
 addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 
