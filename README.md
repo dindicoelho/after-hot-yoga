@@ -16,10 +16,16 @@ Escolha seu lutador, equipe um **copo Stanley como arma** e encare a chefe defin
 | Pular | `↑` / `W` / `Espaço` |
 | Soco | `J` |
 | Arma (copo) | `K` |
+| Especial | `I` (quando a barra enche) |
 | Defesa | `L` |
 | Reiniciar luta | `R` |
 
 O fluxo é: **título → escolher personagem → escolher copo → lutar contra a carioca**.
+
+### 📱 No celular
+
+O jogo é **jogável no toque**: em aparelhos móveis aparecem botões na tela (direcionais à
+esquerda, ações à direita). Jogue na **horizontal** — em pé, um aviso pede pra girar o aparelho.
 
 ---
 
@@ -52,7 +58,20 @@ Cada copo tem uma mecânica de combate diferente:
 - **HTML5 Canvas + JavaScript puro** — sem dependências, sem build
 - Pixel art **procedural** (desenhada bloco a bloco em tempo real)
 - Áudio sintetizado via **Web Audio API**
+- Controles de **teclado e toque** (mobile)
 - Roda 100% no navegador, em qualquer dispositivo
+
+O código é dividido em scripts simples carregados em ordem (sem bundler):
+
+```
+index.html        markup + estilos + telas
+js/config.js      personagens, armas, especiais e constantes
+js/art.js         desenho pixel art (personagens, cenário, projéteis)
+js/sfx.js         efeitos sonoros (Web Audio)
+js/engine.js      motor de luta: física, IA, golpes, projéteis
+js/input.js       entrada de teclado
+js/ui.js          telas, HUD, loop principal e controles de toque
+```
 
 ## ▶️ Rodar localmente
 
