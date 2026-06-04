@@ -89,3 +89,17 @@ const SPECIALS = {
 /* ---------- Constantes de mundo ---------- */
 const SW=20, SH=30;                       // grid do sprite em "pixels"
 const GROUND=232, GW=480, GH=270, GRAV=0.7;
+
+/* ---------- Níveis de dificuldade da IA (a carioca) ----------
+   reactBlock : chance de bloquear quando o player ataca de perto
+   delayMin/Max: frames entre decisões (menor = reage mais rápido)
+   aggression : tendência a partir pra cima
+   speed      : velocidade de andar
+   punish     : chance/frame de punir golpe errado do player
+   antiAir    : chance/frame de revidar quando o player pula perto
+   spRange    : distância em que dispara o especial                         */
+const AI_LEVELS = {
+  facil:   {name:'Fácil',   reactBlock:0.15, delayMin:16, delayMax:34, aggression:0.45, speed:1.5, punish:0.025, antiAir:0.03, spRange:80},
+  normal:  {name:'Normal',  reactBlock:0.42, delayMin:8,  delayMax:22, aggression:0.66, speed:1.9, punish:0.06,  antiAir:0.06, spRange:96},
+  dificil: {name:'Difícil', reactBlock:0.72, delayMin:4,  delayMax:12, aggression:0.86, speed:2.25, punish:0.10, antiAir:0.09, spRange:112},
+};

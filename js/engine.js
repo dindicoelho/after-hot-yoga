@@ -5,7 +5,9 @@ const cv=document.getElementById('game'), g=cv.getContext('2d');
 g.imageSmoothingEnabled=false;
 
 let player, enemy, projectiles, fx, waves, floaters, shake, flashScreen, hitstop, gameState, msg, msgT, keys={}, raf;
+let aiLevel='normal';                                  // dificuldade da IA (ver AI_LEVELS)
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rint=(a,b)=>a+Math.floor(Math.random()*(b-a+1));   // inteiro aleatório em [a,b]
 
 function mkFighter(cfg, weapon, x, facing, hp, isPlayer){
   return {
@@ -76,27 +78,51 @@ function controlPlayer(f, foe){
 }
 
 function aiControl(f, foe){
+  const L = AI_LEVELS[aiLevel] || AI_LEVELS.normal;
   f.aiT--;
+  f.blocking=false;
   const dist=Math.abs(foe.x-f.x);
-  f.facing = foe.x>f.x?1:-1;
-  // bloqueia às vezes quando o player ataca de perto
-  f.blocking = (foe.state==='attack' && dist<60 && (f.t%120)<28);
-  if(f.blocking){ f.vx*=0.5; return; }
+  const dir = foe.x>f.x?1:-1;
+  f.facing = dir;
 
-  // especial quando a barra enche
-  if(f.special && f.meter>=100 && f.cd<=0 && dist<95){ useSpecial(f, foe); f.aiMode='approach'; return; }
+  // 1) REAÇÃO ao ataque do player: decide UMA vez por ataque (trava o sorteio)
+  if(foe.state==='attack' && dist<72 && f.onGround){
+    if(!f.reacted){ f.reacted=true; f.reactRoll=Math.random(); }
+    if(f.reactRoll < L.reactBlock){ f.blocking=true; f.vx*=0.5; return; }          // defende
+    if(f.reactRoll < L.reactBlock+0.22 && dist<46){ f.vx=-dir*L.speed; f.state='walk'; return; } // se esquiva pra trás
+  } else { f.reacted=false; }
 
-  if(f.aiT<=0){
-    const r=(f.t*9301+49297)%233280/233280; // pseudo-rand determinístico
-    if(dist>70){ f.aiMode='approach'; f.aiT=24+((f.t)%30); }
-    else if(r<0.55){ f.aiMode='attack'; f.aiT=20; }
-    else if(r<0.75){ f.aiMode='retreat'; f.aiT=18; }
-    else { f.aiMode='jump'; f.aiT=30; }
+  // 2) ESPECIAL quando a barra enche e está no alcance
+  if(f.special && f.meter>=100 && f.cd<=0 && dist<L.spRange){ useSpecial(f,foe); f.aiMode='wait'; f.aiT=22; return; }
+
+  // 3) ANTI-AÉREO: player no ar e perto → soco quando dá
+  if(!foe.onGround && dist<66 && f.onGround && f.cd<=0 && Math.random()<L.antiAir){ startAttack(f,'punch'); return; }
+
+  // 4) PUNIR whiff: player em recuperação (cd) e perto → fecha e bate
+  if(foe.cd>0 && foe.state!=='attack' && f.onGround && f.cd<=0 && dist<82 && Math.random()<L.punish){
+    if(dist<58){ startAttack(f,'punch'); return; }
+    f.aiMode='approach'; f.aiT=10;
   }
-  if(f.aiMode==='approach' && f.onGround){ f.vx=f.facing*1.9; f.state='walk'; }
-  else if(f.aiMode==='retreat' && f.onGround){ f.vx=-f.facing*1.7; f.state='walk'; }
-  else if(f.aiMode==='jump' && f.onGround){ f.vy=-9; f.vx=f.facing*1.6; f.state='jump'; f.aiMode='approach'; }
-  else if(f.aiMode==='attack' && dist<64 && f.cd<=0){ startAttack(f,'punch'); f.aiMode='approach'; }
+
+  // 5) DECISÃO periódica de modo (já não é determinística)
+  if(f.aiT<=0){
+    const r=Math.random();
+    if(dist>80){ f.aiMode='approach'; f.aiT=rint(L.delayMin,L.delayMax); }
+    else if(dist<32){ f.aiMode = r<0.55?'attack':'retreat'; f.aiT=14; }   // colado: bate ou afasta
+    else if(r<L.aggression){ f.aiMode='attack'; f.aiT=16; }
+    else if(r<L.aggression+0.16){ f.aiMode='retreat'; f.aiT=16; }
+    else { f.aiMode='jump'; f.aiT=28; }
+  }
+
+  // 6) EXECUTA o modo escolhido
+  if(f.aiMode==='approach' && f.onGround){ f.vx=dir*L.speed; f.state='walk'; }
+  else if(f.aiMode==='retreat' && f.onGround){ f.vx=-dir*L.speed*0.9; f.state='walk'; }
+  else if(f.aiMode==='jump' && f.onGround){ f.vy=-9; f.vx=dir*1.6; f.state='jump'; f.aiMode='approach'; }
+  else if(f.aiMode==='attack'){
+    if(dist<60 && f.cd<=0){ startAttack(f,'punch'); f.aiMode='approach'; f.aiT=rint(8,18); }
+    else if(f.onGround){ f.vx=dir*L.speed; f.state='walk'; }   // fora do alcance: aproxima
+  }
+  else if(f.aiMode==='wait'){ f.vx*=0.7; }
 }
 
 function startAttack(f, kind){
