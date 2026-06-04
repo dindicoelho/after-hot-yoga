@@ -1,0 +1,14 @@
+{
+  "name": "after-hot-yoga",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jogo de luta pixel art em vanilla JS + Canvas. Sem build e sem dependências em runtime.",
+  "scripts": {
+    "test": "node --test",
+    "check": "for f in js/*.js; do node --check \"$f\" || exit 1; done && echo 'syntax ok'",
+    "lint": "eslint js/"
+  },
+  "devDependencies": {
+    "eslint": "^9.17.0"
+  }
+}
