@@ -4,7 +4,7 @@
 const cv=document.getElementById('game'), g=cv.getContext('2d');
 g.imageSmoothingEnabled=false;
 
-let player, enemy, projectiles, fx, waves, shake, flashScreen, gameState, msg, msgT, keys={}, raf;
+let player, enemy, projectiles, fx, waves, floaters, shake, flashScreen, hitstop, gameState, msg, msgT, keys={}, raf;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 function mkFighter(cfg, weapon, x, facing, hp, isPlayer){
@@ -244,6 +244,11 @@ function hit(target, dmg, dir, knock, eff={}, attacker=null){
   target.hp=Math.max(0,target.hp-dmg);
   target.vx+=dir*knock; target.vy-=knock*0.4;
   target.invuln=eff.lowInvuln?3:12; target.flash=8;
+  // número de dano flutuante
+  floaters.push({x:target.x, y:target.y-58, vy:-0.85, life:46, maxlife:46,
+    text:''+Math.round(dmg), color: target.blocking?'#9cc7ee':(dmg>=14?'#ffce6b':'#ffffff'), big:dmg>=14});
+  // hitstop (freeze-frame) — quanto mais forte o golpe, mais "crunch"
+  if(!target.blocking) hitstop=Math.max(hitstop, dmg>=16?7:(dmg>=10?4:1));
   // enche a barra de especial (quem apanha enche mais)
   target.meter=Math.min(100, target.meter + dmg*1.6);
   if(attacker) attacker.meter=Math.min(100, attacker.meter + dmg*1.1);
@@ -252,7 +257,7 @@ function hit(target, dmg, dir, knock, eff={}, attacker=null){
     else { target.state='hit'; target.atkT=eff.stun||14; }
   }
   shake=Math.max(shake, dmg>14?10:5);
-  if(target.hp<=0){ target.state='ko'; target.vy=-6; target.vx=dir*4; endFight(target); }
+  if(target.hp<=0){ target.state='ko'; target.vy=-6; target.vx=dir*4; shake=Math.max(shake,14); flashScreen=Math.max(flashScreen,10); hitstop=Math.max(hitstop,8); endFight(target); }
 }
 
 function updateProjectiles(){
@@ -309,6 +314,9 @@ function burst(x,y,color,n){
 }
 function updateFx(){
   for(let i=fx.length-1;i>=0;i--){ const p=fx[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.2; p.life--; if(p.life<=0)fx.splice(i,1); }
+}
+function updateFloaters(){
+  for(let i=floaters.length-1;i>=0;i--){ const f=floaters[i]; f.y+=f.vy; f.vy*=0.92; f.life--; if(f.life<=0)floaters.splice(i,1); }
 }
 
 function endFight(loser){

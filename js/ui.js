@@ -56,7 +56,7 @@ function startFight(){
   go('fight');
   player = mkFighter(chosenChar, chosenWeapon, 130, 1, 100, true);
   enemy  = mkFighter(CARIOCA, null, 350, -1, 130, false);
-  projectiles=[]; fx=[]; waves=[]; shake=0; flashScreen=0; gameState='intro'; msg='ROUND 1'; msgT=90;
+  projectiles=[]; fx=[]; waves=[]; floaters=[]; shake=0; flashScreen=0; hitstop=0; gameState='intro'; msg='ROUND 1'; msgT=90;
   if(!raf) loop();
 }
 
@@ -109,6 +109,15 @@ function drawMsg(){
 /* ---------- loop ---------- */
 function loop(){
   raf=requestAnimationFrame(loop);
+
+  // hitstop (freeze-frame): congela a simulação por uns frames, mas continua desenhando
+  if(hitstop>0 && gameState==='fight'){
+    hitstop--;
+    if(shake>0)shake*=0.85; if(shake<0.4)shake=0;   // o tremor continua durante o congela (dá o "crunch")
+    render();
+    return;
+  }
+
   if(gameState==='intro'){ msgT--; if(msgT<=0){gameState='fight'; msg='';} }
 
   if(gameState==='fight'){
@@ -120,11 +129,14 @@ function loop(){
     [player,enemy].forEach(f=>{ f.x+=f.vx; f.y+=f.vy; if(f.y<GROUND){f.vy+=GRAV;}else{f.y=GROUND;f.vy=0;} f.vx*=0.85; });
     updateProjectiles();
   }
-  updateFx(); updateWaves();
+  updateFx(); updateWaves(); updateFloaters();
   if(shake>0)shake*=0.85; if(shake<0.4)shake=0;
   if(flashScreen>0)flashScreen--;
 
-  // render
+  render();
+}
+
+function render(){
   g.save();
   g.clearRect(0,0,GW,GH);
   if(shake>0.5) g.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake);
@@ -135,10 +147,24 @@ function loop(){
   projectiles.forEach(drawProjectile);
   drawWaves();
   fx.forEach(p=>{ g.globalAlpha=Math.max(0,p.life/18); g.fillStyle=p.color; g.fillRect(p.x-2,p.y-2,4,4); g.globalAlpha=1; });
+  drawFloaters();
   g.restore();
   if(flashScreen>0){ g.fillStyle='rgba(255,255,255,'+(flashScreen/14)+')'; g.fillRect(0,0,GW,GH); }
   drawHUD();
   drawMsg();
+}
+
+function drawFloaters(){
+  g.textAlign='center';
+  floaters.forEach(f=>{
+    const a=Math.max(0, Math.min(1, f.life/f.maxlife));
+    const pop=f.life>f.maxlife-6 ? 1.25 : 1;            // "pop" rápido ao aparecer
+    const size=(f.big?20:14)*pop;
+    g.globalAlpha=a; g.font='bold '+size.toFixed(0)+'px Trebuchet MS';
+    g.fillStyle='#000'; g.fillText(f.text, f.x+1, f.y+1);   // contorno escuro
+    g.fillStyle=f.color; g.fillText(f.text, f.x, f.y);
+    g.globalAlpha=1;
+  });
 }
 
 /* ============================================================
