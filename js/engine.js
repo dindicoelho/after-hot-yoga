@@ -6,6 +6,8 @@ g.imageSmoothingEnabled=false;
 
 let player, enemy, projectiles, fx, waves, floaters, shake, flashScreen, hitstop, gameState, msg, msgT, keys={}, raf;
 let aiLevel='normal';                                  // dificuldade da IA (ver AI_LEVELS)
+let lastWin=false, scoreboard=null;                    // resultado/placar pra tela de fim
+let debugHit=false;                                    // tecla H: mostra hitboxes (dev)
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const rint=(a,b)=>a+Math.floor(Math.random()*(b-a+1));   // inteiro aleatório em [a,b]
 
@@ -14,7 +16,7 @@ function mkFighter(cfg, weapon, x, facing, hp, isPlayer){
     cfg, weapon, x, y:GROUND, vx:0, vy:0, facing, hp, maxhp:hp, isPlayer,
     state:'idle', t:0, atkT:0, cd:0, onGround:true, invuln:0, blocking:false,
     legPhase:0, blink:0, flash:0, aiT:0, aiMode:'approach',
-    meter:30, special:SPECIALS[cfg.id]||null, specialT:0, atkMulti:false
+    meter:CONFIG.meter.start, special:SPECIALS[cfg.id]||null, specialT:0, atkMulti:false
   };
 }
 
@@ -22,13 +24,13 @@ function mkFighter(cfg, weapon, x, facing, hp, isPlayer){
 function updateFighter(f, foe){
   f.t++; f.blink=(f.blink+1)%180;
   if(f.invuln>0)f.invuln--; if(f.cd>0)f.cd--; if(f.flash>0)f.flash--; if(f.specialT>0)f.specialT--;
-  if(f.state!=='ko') f.meter=Math.min(100, f.meter+0.42);   // enchimento passivo da barra de especial
+  if(f.state!=='ko') f.meter=Math.min(100, f.meter+CONFIG.meter.passive);   // enchimento passivo da barra de especial
 
   // sempre vira pro oponente quando parado
   if(f.state==='idle'||f.state==='walk') f.facing = foe.x>f.x?1:-1;
 
   if(f.state==='frozen'){
-    f.atkT--; f.vx*=0.7;
+    f.atkT--; f.vx*=CONFIG.physics.frozenDrag;
     f.x+=f.vx; f.y+=f.vy; if(f.y<GROUND){f.vy+=GRAV;} else {f.y=GROUND;f.vy=0;f.onGround=true;}
     if(f.atkT<=0) f.state='idle';
     return;
@@ -56,8 +58,8 @@ function updateFighter(f, foe){
   f.y += f.vy;
   if(f.y<GROUND){ f.vy+=GRAV; f.onGround=false; }
   else { f.y=GROUND; f.vy=0; if(!f.onGround){f.onGround=true;} }
-  f.vx*=0.8;
-  f.x=Math.max(24,Math.min(GW-24,f.x));
+  f.vx*=CONFIG.physics.friction;
+  f.x=Math.max(CONFIG.physics.wallMargin,Math.min(GW-CONFIG.physics.wallMargin,f.x));
 
   if(f.state==='walk' && Math.abs(f.vx)<0.4 && f.onGround) f.state='idle';
   if(f.onGround && f.state==='jump') f.state='idle';
@@ -70,8 +72,8 @@ function controlPlayer(f, foe){
   let mv=0;
   if(pressing('arrowleft','a')) mv=-1;
   if(pressing('arrowright','d')) mv=1;
-  if(mv!==0 && f.onGround){ f.vx=mv*2.4; f.facing=mv; f.state='walk'; }
-  if(pressing('arrowup','w',' ') && f.onGround){ f.vy=-10; f.state='jump'; sfx('jump'); }
+  if(mv!==0 && f.onGround){ f.vx=mv*CONFIG.move.walk; f.facing=mv; f.state='walk'; }
+  if(pressing('arrowup','w',' ') && f.onGround){ f.vy=CONFIG.move.jump; f.state='jump'; sfx('jump'); }
   if(keys['i'] && f.special && f.meter>=100 && f.cd<=0){ useSpecial(f, foe); return; }
   if(keys['j'] && f.cd<=0){ startAttack(f, 'punch'); }
   if(keys['k'] && f.cd<=0){ startWeapon(f, foe); }
@@ -126,9 +128,10 @@ function aiControl(f, foe){
 }
 
 function startAttack(f, kind){
-  f.state='attack'; f.atkT=18; f.atkActive=10; f.atkKind='punch';
-  f.atkDmg=8; f.atkReach=30; f.atkKnock=4; f.atkStun=0; f.atkFreeze=0; f.atkHitsLeft=1; f.atkMulti=false;
-  f.cd=22; f.vx+=f.facing*0.5;
+  const P=CONFIG.punch;
+  f.state='attack'; f.atkT=P.atkT; f.atkActive=P.atkActive; f.atkKind='punch';
+  f.atkDmg=P.dmg; f.atkReach=P.reach; f.atkKnock=P.knock; f.atkStun=0; f.atkFreeze=0; f.atkHitsLeft=1; f.atkMulti=false;
+  f.cd=P.cd; f.vx+=f.facing*0.5;
   sfx('swing');
 }
 function startWeapon(f, foe){
@@ -249,8 +252,8 @@ function drawWaves(){
 
 function doMeleeHit(f, foe){
   const dist=(foe.x-f.x)*f.facing;
-  const inRange = f.atkKind==='spin' ? (Math.abs(foe.x-f.x)<f.atkReach && Math.abs(foe.y-f.y)<44)
-                                     : (dist>-8 && dist<f.atkReach && Math.abs(foe.y-f.y)<44);
+  const inRange = f.atkKind==='spin' ? (Math.abs(foe.x-f.x)<f.atkReach && Math.abs(foe.y-f.y)<42)
+                                     : (dist>-3 && dist<f.atkReach && Math.abs(foe.y-f.y)<42);
   if(inRange){
     const ddir = f.atkKind==='spin' ? (foe.x>f.x?1:-1) : f.facing;
     hit(foe, f.atkDmg, ddir, f.atkKnock, {stun:f.atkStun, freeze:f.atkFreeze, lowInvuln:f.atkMulti}, f);
@@ -265,25 +268,26 @@ function doMeleeHit(f, foe){
 
 function hit(target, dmg, dir, knock, eff={}, attacker=null){
   if(target.invuln>0||target.state==='ko') return;
-  if(target.blocking){ dmg*=0.25; knock*=0.4; sfx('block'); fx.push(...burst(target.x+dir*-10,target.y-40,'#9ad',5)); }
+  const H=CONFIG.hit, M=CONFIG.meter, J=CONFIG.juice;
+  if(target.blocking){ dmg*=H.blockDmg; knock*=H.blockKnock; sfx('block'); fx.push(...burst(target.x+dir*-10,target.y-40,'#9ad',5)); }
   else { sfx('hit'); fx.push(...burst(target.x,target.y-42,'#ff5a3c',8)); }
   target.hp=Math.max(0,target.hp-dmg);
   target.vx+=dir*knock; target.vy-=knock*0.4;
-  target.invuln=eff.lowInvuln?3:12; target.flash=8;
+  target.invuln=eff.lowInvuln?H.invulnLow:H.invuln; target.flash=H.flash;
   // número de dano flutuante
-  floaters.push({x:target.x, y:target.y-58, vy:-0.85, life:46, maxlife:46,
-    text:''+Math.round(dmg), color: target.blocking?'#9cc7ee':(dmg>=14?'#ffce6b':'#ffffff'), big:dmg>=14});
+  floaters.push({x:target.x, y:target.y-58, vy:-0.85, life:J.floaterLife, maxlife:J.floaterLife,
+    text:''+Math.round(dmg), color: target.blocking?'#9cc7ee':(dmg>=H.heavyDmg?'#ffce6b':'#ffffff'), big:dmg>=H.heavyDmg});
   // hitstop (freeze-frame) — quanto mais forte o golpe, mais "crunch"
-  if(!target.blocking) hitstop=Math.max(hitstop, dmg>=16?7:(dmg>=10?4:1));
+  if(!target.blocking) hitstop=Math.max(hitstop, dmg>=J.heavyDmg?J.hitstopHeavy:(dmg>=J.midDmg?J.hitstopMid:J.hitstopLight));
   // enche a barra de especial (quem apanha enche mais)
-  target.meter=Math.min(100, target.meter + dmg*1.6);
-  if(attacker) attacker.meter=Math.min(100, attacker.meter + dmg*1.1);
+  target.meter=Math.min(100, target.meter + dmg*M.onTake);
+  if(attacker) attacker.meter=Math.min(100, attacker.meter + dmg*M.onDeal);
   if(!target.blocking){
     if(eff.freeze){ target.state='frozen'; target.atkT=eff.freeze; }
-    else { target.state='hit'; target.atkT=eff.stun||14; }
+    else { target.state='hit'; target.atkT=eff.stun||H.hitstun; }
   }
-  shake=Math.max(shake, dmg>14?10:5);
-  if(target.hp<=0){ target.state='ko'; target.vy=-6; target.vx=dir*4; shake=Math.max(shake,14); flashScreen=Math.max(flashScreen,10); hitstop=Math.max(hitstop,8); endFight(target); }
+  shake=Math.max(shake, dmg>H.heavyDmg?H.shakeHeavy:H.shakeLight);
+  if(target.hp<=0){ target.state='ko'; target.vy=-6; target.vx=dir*4; shake=Math.max(shake,J.koShake); flashScreen=Math.max(flashScreen,J.koFlash); hitstop=Math.max(hitstop,J.koHitstop); endFight(target); }
 }
 
 function updateProjectiles(){
@@ -348,6 +352,8 @@ function updateFloaters(){
 function endFight(loser){
   if(gameState==='over') return;
   gameState='over';
-  if(loser===enemy){ msg='VOCÊ VENCEU! 🧘'; } else { msg='A CARIOCA VENCEU...'; }
+  lastWin = (loser===enemy);
+  scoreboard = recordResult(lastWin);     // atualiza e persiste o placar
+  msg = lastWin ? 'VOCÊ VENCEU! 🧘' : 'A CARIOCA VENCEU...';
   msgT=99999;
 }

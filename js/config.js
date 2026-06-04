@@ -103,3 +103,16 @@ const AI_LEVELS = {
   normal:  {name:'Normal',  reactBlock:0.42, delayMin:8,  delayMax:22, aggression:0.66, speed:1.9, punish:0.06,  antiAir:0.06, spRange:96},
   dificil: {name:'Difícil', reactBlock:0.72, delayMin:4,  delayMax:12, aggression:0.86, speed:2.25, punish:0.10, antiAir:0.09, spRange:112},
 };
+
+/* ---------- Ajustes de jogo (números antes espalhados pelo motor) ----------
+   Mexa aqui pra balancear sem caçar valores no meio do código.            */
+const CONFIG = {
+  physics:{ friction:0.8, koFriction:0.85, frozenDrag:0.7, wallMargin:24 },
+  move:   { walk:2.4, jump:-10 },
+  punch:  { atkT:18, atkActive:10, dmg:8, reach:30, knock:4, cd:22 },
+  hit:    { invuln:12, invulnLow:3, flash:8, hitstun:14,
+            blockDmg:0.25, blockKnock:0.4, heavyDmg:14, shakeHeavy:10, shakeLight:5 },
+  meter:  { start:30, passive:0.42, onTake:1.6, onDeal:1.1, grabRefund:70 },
+  juice:  { floaterLife:46, hitstopHeavy:7, hitstopMid:4, hitstopLight:1, heavyDmg:16, midDmg:10,
+            koShake:14, koFlash:10, koHitstop:8 },
+};
